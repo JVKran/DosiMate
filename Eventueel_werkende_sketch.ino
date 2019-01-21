@@ -21,7 +21,6 @@
 // Button is connected to Pro Mini
 
 int AG[20];
-String AG1;
 int SSN[20];
 int SV[20];
 int ST[20];
@@ -101,11 +100,11 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 
 // const char* ssid = "WemosTestNetwork";
 // const char* password = "test1234";
-const char* ssid = "Dosimate";
-const char* password = "project123";
-// const char* ssid = "KraanBast2.4";
-// const char* password = "Snip238!";
-char* mqtt_server = "192.168.0.103";
+//const char* ssid = "Dosimate";
+//const char* password = "project123";
+const char* ssid = "KraanBast2.4";
+const char* password = "Snip238!";
+char* mqtt_server = "192.168.178.74";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -349,15 +348,6 @@ void drawQuestionBars(){
       tft.fillRect(60, yVal, width, 5, color);
       lastBarCounter = barCounter;
     }
-    if (counter == 4){
-      AG[selecCounter] = width;
-    } else if (counter == 6){
-      SSN[selecCounter] = width;
-    } else if (counter == 8){
-      SV[selecCounter] = width;
-    } else if (counter == 10){
-      ST[selecCounter] = width;
-    }
   }
 }
 
@@ -571,9 +561,8 @@ void serialMessages(){
         delay(500);
         inBar = 0;
         for (int i = 1; i<5; i++){
-          AG1.concat(AG[i] + ", ");
+          client.publish("/Pi/DosiMate",String(AG[i]).c_str());
         }
-        client.publish("/Pi/DosiMate",AG1.c_str());
         arr_index = 0;
         // Nog upload schermpje en geslaagd met 5 seconden delay en dan counter 0 zodat naar barscherm
       }
@@ -631,21 +620,40 @@ void serialMessages(){
         arr_index = 0;
       }
       if (counter == 4){
-        AG[arr_index] = width;
-        arr_index++;
+        client.publish("/Pi/DosiMate","AG");
+        // Check if the width is bigger than 0. Else it is a false value
+        arr_index ++;
+        if (width > 0){
+          AG[arr_index] = width;
+        }
       } else if (counter == 6){
-        SSN[arr_index] = width;
-        arr_index++;
+        arr_index ++;
+        client.publish("/Pi/DosiMate","SSN");
+        if (width > 0){
+          SSN[arr_index] = width;
+        }
       } else if (counter == 8){
-        SV[arr_index] = width;
-        arr_index++;
+        client.publish("/Pi/DosiMate","SV");
+        if (width > 0){
+          SV[arr_index] = width;
+        }
       } else if (counter == 10){
-        ST[arr_index] = width;
-        arr_index++;
+        client.publish("/Pi/DosiMate","ST");
+        if (width > 0){
+          ST[arr_index] = width;
+        }
       } else if (counter == 12){
-        BW[arr_index] = width;
-        arr_index++;
+        client.publish("/Pi/DosiMate","BW");
+        if (width > 0){
+          BW[arr_index] = width;
+        }
       }
+      client.publish("/Pi/DosiMate",String(AG[3]).c_str());
+      client.publish("/Pi/DosiMate",String(AG[5]).c_str());
+      client.publish("/Pi/DosiMate",String(AG[7]).c_str());
+      client.publish("/Pi/DosiMate",String(AG[9]).c_str());
+      client.publish("/Pi/DosiMate",String(AG[11]).c_str());
+      client.publish("/Pi/DosiMate",String(arr_index).c_str());
     } else if (serialMessage = "longPress"){
       counter = 0;
     }
@@ -691,4 +699,3 @@ void loop() {
   displayManager();
   drawQuestionBars();
 }
-
