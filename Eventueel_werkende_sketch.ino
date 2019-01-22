@@ -21,10 +21,13 @@
 // Button is connected to Pro Mini
 
 int AG[20];
+String AG1;
 int SSN[20];
+String SSN1;
 int SV[20];
 int ST[20];
-int BW[20];
+int PN[20];
+int marks[5] = {2, 1, 3, 5, 2};
 // Used to define which screen is displayed 1: Bar graph, 2; geheugen en gedinges, etcetera
 int screen;
 int inBar;
@@ -180,20 +183,12 @@ void displayManager(){
       dispCurTime(130,3);
       screen = counter;
       tft.setTextColor(BACKCOLOR);
-      tft.setCursor(4,5);
-      tft.print("Parkinson Monitor");
-      tft.setCursor(2,15);
-      tft.print("Aandacht/Geheugen");
-      tft.setCursor(2,25);
-      tft.print("Slaapstoornissen");
-      tft.setCursor(2,35);
-      tft.print("Spijsvertering");
-      tft.setCursor(2,45);
-      tft.print("Stemming");
-      tft.setCursor(2,55);
-      tft.print("Beweging");
-      tft.setCursor(2,70);
-      tft.print("Druk om af te leggen");
+      tft.setRotation(1);
+      tft.fillRect(140, 10, 15, float((float(marks[1]) / float(5)) * float(50)), 0xFFE0);
+      tft.fillRect(123, 10, 15, float((float(marks[2]) / float(5)) * float(50)), 0xFFE0);
+      tft.fillRect(106, 10, 15, float((float(marks[3]) / float(5)) * float(50)), 0xFFE0);
+      tft.fillRect(89, 10, 15, float((float(marks[4]) / float(5)) * float(50)), 0xFFE0);
+      tft.setRotation(3);
     } else if ((counter == 4) and (inMonitor == 1)){
       screen = counter;
       firstQuestionScreen();
@@ -254,17 +249,17 @@ void thirdQuestionScreen(){
   dispCurTime(130,3);
   tft.setTextColor(BACKCOLOR);
   tft.setCursor(4,5);
-  tft.print("Slaapstoornissen");
+  tft.print("Spijsvertering");
   tft.setCursor(2,15);
-  tft.print("In slaap vallen");
+  tft.print("Slikken");
   tft.setCursor(2,25);
-  tft.print("Doorslapen");
+  tft.print("overgeven");
   tft.setCursor(2,35);
-  tft.print("'s Ochtends moe");
+  tft.print("Contistipatie");
   tft.setCursor(2,45);
-  tft.print("Overdag moe");
+  tft.print("Maagklachten");
   tft.setCursor(2,55);
-  tft.print("Indutten");
+  tft.print("Darmklachten");
 }
 
 void fourthQuestionScreen(){
@@ -273,18 +268,19 @@ void fourthQuestionScreen(){
   dispCurTime(130,3);
   tft.setTextColor(BACKCOLOR);
   tft.setCursor(4,5);
-  tft.print("Slaapstoornissen");
+  tft.print("Pijnen");
   tft.setCursor(2,15);
-  tft.print("In slaap vallen");
+  tft.print("Krampen");
   tft.setCursor(2,25);
-  tft.print("Doorslapen");
+  tft.print("Pijnschokken");
   tft.setCursor(2,35);
-  tft.print("'s Ochtends moe");
+  tft.print("Tremoren");
   tft.setCursor(2,45);
-  tft.print("Overdag moe");
+  tft.print("Hoofdpijn");
   tft.setCursor(2,55);
-  tft.print("Indutten");
+  tft.print("Stijfheid");
 }
+
 void dispCurTime(int x, int y){
   newTime = "";
   newTime.concat(hour());
@@ -500,13 +496,15 @@ void realTimeRatioUpdate(){
   client.publish("/Pi/DosiMate",(("Trillingen: ",tl).c_str()));
   hl = "";
   tl = "";
-  tft.fillRect(90, 10, 70, 80, PRINTCOLOR);
-  tft.setRotation(1);
-  tft.fillRect(4, 6, 15, (int(float(float(shakings) / ((float(smallMovements) + float(normalMovements) + float(largeMovements) + float(shakings)))) * float(70))), 0xFFE0);
-  tft.fillRect(21, 6, 15, (int(float(float(largeMovements) / ((float(smallMovements) + float(normalMovements) + float(largeMovements) + float(shakings)))) * float(70))), 0xFFE0);
-  tft.fillRect(38, 6, 15, (int(float(float(normalMovements) / ((float(smallMovements) + float(normalMovements) + float(largeMovements) + float(shakings)))) * float(70))), 0xFFE0);
-  tft.fillRect(55, 6, 15, (int(float(float(smallMovements) / ((float(smallMovements) + float(normalMovements) + float(largeMovements) + float(shakings)))) * float(70))), 0xFFE0);
-  tft.setRotation(3);
+  if (counter == 0){
+    tft.fillRect(90, 10, 70, 80, PRINTCOLOR);
+    tft.setRotation(1);
+    tft.fillRect(4, 6, 15, (int(float(float(shakings) / ((float(smallMovements) + float(normalMovements) + float(largeMovements) + float(shakings)))) * float(70))), 0xFFE0);
+    tft.fillRect(21, 6, 15, (int(float(float(largeMovements) / ((float(smallMovements) + float(normalMovements) + float(largeMovements) + float(shakings)))) * float(70))), 0xFFE0);
+    tft.fillRect(38, 6, 15, (int(float(float(normalMovements) / ((float(smallMovements) + float(normalMovements) + float(largeMovements) + float(shakings)))) * float(70))), 0xFFE0);
+    tft.fillRect(55, 6, 15, (int(float(float(smallMovements) / ((float(smallMovements) + float(normalMovements) + float(largeMovements) + float(shakings)))) * float(70))), 0xFFE0);
+    tft.setRotation(3);
+  }
   tft.setTextColor(PRINTCOLOR);
   tft.setCursor(96, 70);
   tft.print("K");
@@ -554,66 +552,59 @@ void serialMessages(){
         inMonitor = 1;
         counter = 4;
         inBar = 1;
-      } else if ((screen == 10)and(selecCounter == 16)){
+      } else if ((screen == 10)and(selecCounter == 18)){
         barCounter = 0;
+        selecCounter = 0;
         inMonitor = 0;
         counter = 0;
-        delay(500);
         inBar = 0;
-        for (int i = 1; i<5; i++){
-          client.publish("/Pi/DosiMate",String(AG[i]).c_str());
-        }
+        client.publish("/Pi/DosiMate",String(AG[1]).c_str());
+        client.publish("/Pi/DosiMate",String(AG[2]).c_str());
+        client.publish("/Pi/DosiMate",String(AG[3]).c_str());
+        client.publish("/Pi/DosiMate",String(SSN[1]).c_str());
+        client.publish("/Pi/DosiMate",String(SSN[2]).c_str());
+        client.publish("/Pi/DosiMate",String(SSN[3]).c_str());
         arr_index = 0;
         // Nog upload schermpje en geslaagd met 5 seconden delay en dan counter 0 zodat naar barscherm
       }
       if (selecCounter == 0){
         barCounter = 0;
         selecCounter = 2;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 2){
         barCounter = 0;
         selecCounter = 4;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 4){
         barCounter = 0;
         selecCounter = 6;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 6){
         barCounter = 0;
         selecCounter = 8;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 8){
         barCounter = 0;
         selecCounter = 10;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 10){
         barCounter = 0;
         selecCounter = 12;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 12){
         barCounter = 0;
         selecCounter = 14;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 14){
         barCounter = 0;
         selecCounter = 16;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 16){
         barCounter = 0;
         selecCounter = 18;
-        delay(500);
         barLength = 0;
       } else if (selecCounter == 18){
         barCounter = 0;
-        delay(500);
         barLength = 0;
         selecCounter = 0;
         counter += 2;
@@ -624,36 +615,30 @@ void serialMessages(){
         // Check if the width is bigger than 0. Else it is a false value
         arr_index ++;
         if (width > 0){
-          AG[arr_index] = width;
+          AG[(arr_index/2)-1] = width;
         }
       } else if (counter == 6){
         arr_index ++;
         client.publish("/Pi/DosiMate","SSN");
         if (width > 0){
-          SSN[arr_index] = width;
+          SSN[(arr_index/2)-1] = width;
         }
       } else if (counter == 8){
         client.publish("/Pi/DosiMate","SV");
         if (width > 0){
-          SV[arr_index] = width;
+          SV[(arr_index/2)-1] = width;
         }
       } else if (counter == 10){
         client.publish("/Pi/DosiMate","ST");
         if (width > 0){
-          ST[arr_index] = width;
+          ST[(arr_index/2)-1] = width;
         }
       } else if (counter == 12){
         client.publish("/Pi/DosiMate","BW");
         if (width > 0){
-          BW[arr_index] = width;
+          PN[(arr_index/2)-1] = width;
         }
       }
-      client.publish("/Pi/DosiMate",String(AG[3]).c_str());
-      client.publish("/Pi/DosiMate",String(AG[5]).c_str());
-      client.publish("/Pi/DosiMate",String(AG[7]).c_str());
-      client.publish("/Pi/DosiMate",String(AG[9]).c_str());
-      client.publish("/Pi/DosiMate",String(AG[11]).c_str());
-      client.publish("/Pi/DosiMate",String(arr_index).c_str());
     } else if (serialMessage = "longPress"){
       counter = 0;
     }
