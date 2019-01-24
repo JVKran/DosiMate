@@ -7,6 +7,8 @@
 #include <SPI.h>
 #include <math.h>
 #include <TimeLib.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
 
 #define TFT_CS     D1
 #define TFT_RST    D0
@@ -60,6 +62,7 @@ unsigned long old_interval = 0;
 unsigned long new_interval = 0;
 unsigned long time_now_reconnect = 0;
 unsigned long time_now_reconnect_mqtt = 0;
+unsigned long timeRefreshPeriod = 0;
 String message;
 // Used for monitoring time
 String oldTime;
@@ -98,19 +101,24 @@ unsigned long timeLast;
 String newTime;
 long lastReconnectAttempt = 0;
 int arr_index = 0;
+int heartRate;
+int SpO2;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 
 // const char* ssid = "WemosTestNetwork";
 // const char* password = "test1234";
-//const char* ssid = "Dosimate";
-//const char* password = "project123";
-const char* ssid = "KraanBast2.4";
-const char* password = "Snip238!";
-char* mqtt_server = "192.168.178.74";
+const char* ssid = "Dosimate";
+const char* password = "project123";
+// const char* ssid = "******";
+// const char* password = "*****";
+char* mqtt_server = "192.168.0.103";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP);
 
 void setup_wifi() {
   delay(10);
@@ -140,7 +148,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++) {
     message.concat((char)payload[i]);
   }
-  if (message.startsWith("Tijd: ")){
+  if (message.startsWith("Tijd: ")    ){
     newTime = message.substring(0,10);
   } else if(message=="ARM_HOME"){
     client.publish("/woonkamer/alarm", "armed_home");
@@ -168,6 +176,7 @@ void setup() {
   drawBarChart(avgh[(newTime.substring(0,2)).toInt()], avgh[(newTime.substring(0,2)).toInt()+1], avgh[(newTime.substring(0,2)).toInt()+2], avgh[(newTime.substring(0,2)).toInt()+3], avgh[(newTime.substring(0,2)).toInt()+4], avgh[(newTime.substring(0,2)).toInt()+5]);
   realTimeRatioUpdate();
   screen = 1;
+  timeClient.begin();
 }
 
 void displayManager(){
@@ -179,9 +188,9 @@ void displayManager(){
       realTimeRatioUpdate();
       screen = counter;
     } else if (counter == 2){
+      screen = counter;
       tft.fillScreen(PRINTCOLOR);
       dispCurTime(130,3);
-      screen = counter;
       tft.setTextColor(BACKCOLOR);
       tft.setRotation(1);
       tft.fillRect(140, 10, 15, float((float(marks[1]) / float(5)) * float(50)), 0xFFE0);
@@ -382,22 +391,18 @@ void detectMove() {
       }
     }
     if (maxMove == 4){
-      Serial.println("Trilling waargenomen");
       shakings++;
       totalMovements++;
       updateHourlyMovements(maxMove);
     } else if (maxMove == 3){
-      Serial.println("Grote beweging waargenomen");
       largeMovements++;
       totalMovements++;
       updateHourlyMovements(maxMove);
     } else if (maxMove == 2){
-      Serial.println("Normale beweging waargenomen");
       normalMovements++;
       totalMovements++;
       updateHourlyMovements(maxMove);
     } else if (maxMove == 1){
-      Serial.println("Kleine beweging waargenomen");
       smallMovements++;
       totalMovements++;
       updateHourlyMovements(maxMove);
@@ -546,11 +551,14 @@ void serialMessages(){
     }
   }
   if (serialMessage != ""){
-    if (serialMessage = "shortPress"){
+    client.publish("/Pi/DosiMate",serialMessage.c_str());
+    if (serialMessage == "shortPress"){
+      tft.fillScreen(BACKCOLOR);
       if (screen == 2){
+        counter = 4;
+        selecCounter = 2;
         barCounter = 0;
         inMonitor = 1;
-        counter = 4;
         inBar = 1;
       } else if ((screen == 10)and(selecCounter == 18)){
         barCounter = 0;
@@ -639,8 +647,16 @@ void serialMessages(){
           PN[(arr_index/2)-1] = width;
         }
       }
-    } else if (serialMessage = "longPress"){
+    } else if (serialMessage == "longPress"){
+      tft.fillScreen(PRINTCOLOR);
       counter = 0;
+      client.publish("/Pi/DosiMate",String("LONGPRESS waargenomen").c_str());
+    } else if (serialMessage.startsWith("HZ")){
+      tft.fillScreen(BACKCOLOR);
+      heartRate = (String(serialMessage).substring(2,4)).toInt();
+      SpO2 = (String(serialMessage).substring(5,7)).toInt();
+      client.publish("/Pi/DosiMate", String(heartRate).c_str());
+      client.publish("/Pi/DosiMate", String(SpO2).c_str());
     }
   }
   serialMessage = "";
@@ -678,6 +694,11 @@ void loop() {
     reconnect();
   } else if (client.connected()){
     client.loop();
+    if (millis() > timeRefreshPeriod + 60000){
+      timeRefreshPeriod = millis();
+      timeClient.update();
+      setTime(String(timeClient.getFormattedTime()).substring(0,2).toInt(), String(timeClient.getFormattedTime()).substring(4,6).toInt(), 0, 0, 0, 2019);
+    }
   }
   rotaryPosition();
   serialMessages();
