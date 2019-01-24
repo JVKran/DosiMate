@@ -107,6 +107,7 @@ int prevBarCounter;
 int questionCounter;
 int prevCounter;
 int widthValue;
+int newTimePart;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 
@@ -114,8 +115,8 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS,  TFT_DC, TFT_RST);
 // const char* password = "test1234";
 // const char* ssid = "Dosimate";
 // const char* password = "project123";
-const char* ssid = "****";
-const char* password = "****";
+const char* ssid = "KraanBast2.4";
+const char* password = "Snip238!";
 char* mqtt_server = "192.168.178.74";
 
 WiFiClient espClient;
@@ -428,12 +429,24 @@ void drawBarChart(int startBar, int firstBar, int secondBar, int thirdBar, int f
   tft.setCursor(5,70);
   tft.print((newTime.substring(0,2)).toInt());
   tft.setCursor(22,70);
-  tft.print((newTime.substring(0,2)).toInt()+1);
+  if ((newTime.substring(0,2).toInt()+1) >= 24){
+    newTimePart = (newTime.substring(0,2).toInt()+1) - 24;
+  }
+  tft.print(newTimePart);
   tft.setCursor(39,70);
-  tft.print((newTime.substring(0,2)).toInt()+2);
+  if ((newTime.substring(0,2).toInt()+2) >= 24){
+    newTimePart = (newTime.substring(0,2).toInt()+2) - 24;
+  }
+  tft.print(newTimePart);
   tft.setCursor(56,70);
-  tft.print((newTime.substring(0,2)).toInt()+3);
+  if ((newTime.substring(0,2).toInt()+3) >= 24){
+    newTimePart = (newTime.substring(0,2).toInt()+3) - 24;
+  }
+  tft.print(newTimePart);
   tft.setCursor(73,70);
+  if ((newTime.substring(0,2).toInt()+4) >= 24){
+    newTimePart = (newTime.substring(0,2).toInt()+4) - 24;
+  }
   tft.print((newTime.substring(0,2)).toInt()+4);
 }
 
@@ -501,7 +514,8 @@ void serialMessages(){
   }
   if (serialMessage != ""){
     Serial.println(serialMessage);
-    if (String(serialMessage) == " 1" or String(serialMessage) == "1" or serialMessage == " 1" or serialMessage == "1"){
+    client.publish("/Pi/DosiMate",String(serialMessage).c_str());
+    if (String(serialMessage) == " F" or String(serialMessage) == "F" or serialMessage == " F" or serialMessage == "F"){
       if (screen == 2){
         counter = 4;
         questionCounter = 1;
@@ -527,16 +541,16 @@ void serialMessages(){
         widthValue = width;
         barCounter = 0; // Set length of bar to 0
       }
-    } else if (String(serialMessage) == " 2" or String(serialMessage) == "2" or serialMessage == " 2" or serialMessage == "2"){
+    } else if (String(serialMessage) == " X" or String(serialMessage) == "X" or serialMessage == " X" or serialMessage == "X"){
       counter = 0;
       inBar = 0;
       inMonitor = 0;
-    } else if (serialMessage.startsWith("HZ")){
-      tft.fillScreen(BACKCOLOR);
-      heartRate = (String(serialMessage).substring(2,4)).toInt();
-      SpO2 = (String(serialMessage).substring(5,7)).toInt();
-      client.publish("/Pi/DosiMate", String(heartRate).c_str());
-      client.publish("/Pi/DosiMate", String(SpO2).c_str());
+    } else if (serialMessage.startsWith("Z")){ // De letter H valt weg
+      // This code has to check for 'HZ97;93' or 'HZ96;94' or 'HZ101;94'
+        heartRate = (String(serialMessage).substring(2,4)).toInt();
+        SpO2 = (String(serialMessage).substring(5,7)).toInt();
+        client.publish("/Pi/DosiMate", String(heartRate).c_str());
+        client.publish("/Pi/DosiMate", String(SpO2).c_str());
     }
   }
   serialMessage = "";
